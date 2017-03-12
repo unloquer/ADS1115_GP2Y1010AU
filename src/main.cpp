@@ -54,6 +54,12 @@ float dustDensity = 0;
 
 float multiplier;
 
+// SHARP SENSOR VARIABLES
+int dust_analog;
+float dust_voltage;  // measured
+int concSHARP;       // calculated
+int samples = 100;    // with delay of 100ms in between
+
 void setup(void) 
 {
   pinMode(ledPower,OUTPUT);
@@ -82,41 +88,64 @@ void setup(void)
 
 void loop(void)
 {
-  int16_t adc0;
+  // int16_t adc0;
 
-  //adc0 = ads.readADC_SingleEnded(0);
-  //Serial.print("Single ADC 0: "); Serial.print(adc0); Serial.print("("); Serial.print(adc0 * multiplier); Serial.println("mV)");
-  //Serial.println(1000.0F*ads.readADC_SingleEnded_V(0));
+  // //adc0 = ads.readADC_SingleEnded(0);
+  // //Serial.print("Single ADC 0: "); Serial.print(adc0); Serial.print("("); Serial.print(adc0 * multiplier); Serial.println("mV)");
+  // //Serial.println(1000.0F*ads.readADC_SingleEnded_V(0));
 
-  digitalWrite(ledPower,LOW); // power on the LED
-  delayMicroseconds(samplingTime);
+  // digitalWrite(ledPower,LOW); // power on the LED
+  // delayMicroseconds(samplingTime);
 
-  voMeasured = 1000.0F*ads.readADC_SingleEnded_V(0);// read the dust value
-  delayMicroseconds(deltaTime);
-  digitalWrite(ledPower,HIGH); // turn the LED off
-  delayMicroseconds(sleepTime);
+  // voMeasured = 1000.0F*ads.readADC_SingleEnded_V(0);// read the dust value
+  // delayMicroseconds(deltaTime);
+  // digitalWrite(ledPower,HIGH); // turn the LED off
+  // delayMicroseconds(sleepTime);
 
-  // // 0 - 5V mapped to 0 - 32767 integer values
-  // // recover voltage
-  calcVoltage = voMeasured; //EL valor de la lectura del pin análogo conectado a 5v
+  // // // 0 - 5V mapped to 0 - 32767 integer values
+  // // // recover voltage
+  // calcVoltage = voMeasured; //EL valor de la lectura del pin análogo conectado a 5v
 
-  // // linear eqaution taken from http://www.howmuchsnow.com/arduino/airquality/
-  // // Chris Nafis (c) 2012
-  dustDensity = 0.17 * calcVoltage - 0.1;
+  // // // linear eqaution taken from http://www.howmuchsnow.com/arduino/airquality/
+  // // // Chris Nafis (c) 2012
+  // dustDensity = 0.17 * calcVoltage - 0.1;
 
-  //Serial.print("Raw Signal Value (0-65536): ");
-  //Serial.print(adc0);
+  // //Serial.print("Raw Signal Value (0-65536): ");
+  // //Serial.print(adc0);
 
-  Serial.print("Voltage: ");
-  Serial.print(calcVoltage);
-  Serial.print("mV)");
+  // Serial.print("Voltage: ");
+  // Serial.print(calcVoltage);
+  // Serial.print("mV");
 
-  Serial.print(" - Dust Density: ");
-  Serial.print(dustDensity);
-  Serial.println(" mg/m3");
+  // Serial.print(" - Dust Density: ");
+  // Serial.print(dustDensity);
+  // Serial.println(" ug/m3");
 
-  // Serial.print(" GAS : ");
-  // Serial.println(adc1);
+  // // Serial.print(" GAS : ");
+  // // Serial.println(adc1);
 
-  delay(1000);
+  // delay(1000);
+
+  // READ SHARP SENSOR
+  dust_voltage = 0;
+  for (int i=0;i<samples;i++) {
+    digitalWrite(ledPower,LOW); // power on the LED
+    delayMicroseconds(280);
+    voMeasured = 1000.0F*ads.readADC_SingleEnded_V(0); // read the dust voltage
+    delayMicroseconds(40);
+    digitalWrite(ledPower,HIGH); // turn the LED off
+    delayMicroseconds(9680);
+    dust_voltage += voMeasured ;  // voltage 0-5V
+    delay(100);
+  }
+  dust_voltage = dust_voltage / samples;
+
+  // CALCULATE SHARP RESULTS
+  concSHARP = 0.172*dust_voltage-0.1;        // density microgram/m3
+  if (concSHARP > 500) concSHARP = 500;
+
+  // PRINT SHARP DATA TO SERIAL
+  Serial.print(dust_voltage);
+  Serial.print("\t\t");
+  Serial.println(concSHARP);
 }
